@@ -467,6 +467,79 @@ def render_header() -> None:
         .gs-mobile-nav-gear.active {
             background: linear-gradient(135deg, #ff637f, #ff8f73);
         }
+        .gs-help-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+        }
+        .gs-help-modal-dim {
+            position: absolute;
+            inset: 0;
+            background: rgba(22, 33, 52, 0.48);
+            backdrop-filter: blur(2px);
+        }
+        .gs-help-modal-card {
+            position: relative;
+            width: min(92vw, 460px);
+            max-height: min(82vh, 720px);
+            overflow: auto;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.88);
+            background: linear-gradient(180deg, rgba(255,255,255,0.97), rgba(250,252,255,0.95));
+            box-shadow: 0 24px 52px rgba(28, 45, 72, 0.28);
+            color: #23314b;
+            padding: 14px 14px 12px 14px;
+        }
+        .gs-help-modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .gs-help-modal-title {
+            font-family: "Jua", "Gowun Dodum", sans-serif;
+            font-size: 1.05rem;
+            color: #1e2d46;
+        }
+        .gs-help-modal-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            text-decoration: none !important;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #ff637f, #ff8f73);
+            border: 1px solid rgba(255,255,255,0.28);
+            font-weight: 800;
+            box-shadow: 0 8px 16px rgba(123, 11, 24, 0.25);
+        }
+        .gs-help-modal-body {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #2b3a57;
+        }
+        .gs-help-modal-body p {
+            margin: 0.4rem 0 0.3rem 0;
+        }
+        .gs-help-modal-body ol,
+        .gs-help-modal-body ul {
+            margin: 0.2rem 0 0.65rem 1.1rem;
+            padding: 0;
+        }
+        .gs-help-modal-foot {
+            margin-top: 0.65rem;
+            padding-top: 0.6rem;
+            border-top: 1px dashed rgba(112, 132, 164, 0.45);
+            color: #5d6c85;
+            font-size: 0.8rem;
+        }
         @media (max-width: 720px) {
             .gs-card {
                 grid-template-columns: 62px minmax(0, 1fr) auto;
@@ -601,6 +674,40 @@ def _render_sidebar_help() -> None:
         _render_help_content()
 
 
+def _render_mobile_help_modal(close_href: str) -> None:
+    st.markdown(
+        f"""
+        <div class="gs-help-modal-overlay">
+          <a class="gs-help-modal-dim" href="{close_href}" aria-label="도움말 닫기"></a>
+          <div class="gs-help-modal-card" role="dialog" aria-modal="true" aria-label="GS-Timetable 사용 안내">
+            <div class="gs-help-modal-head">
+              <div class="gs-help-modal-title">GS-Timetable 사용 안내</div>
+              <a class="gs-help-modal-close" href="{close_href}" aria-label="닫기">✕</a>
+            </div>
+            <div class="gs-help-modal-body">
+              <p><strong>사용방법</strong></p>
+              <ol>
+                <li><code>관리자</code> 화면에서 학급시간표 CSV와 학생정보 엑셀/CSV를 업로드합니다.</li>
+                <li><code>DB 업데이트 실행</code>을 눌러 최신 학기 데이터로 교체합니다.</li>
+                <li><code>학생 화면</code>에서 학번 또는 반/번호로 학생을 조회합니다.</li>
+                <li>요일을 선택하면 해당 요일의 이동 장소와 과목/교사를 바로 확인할 수 있습니다.</li>
+              </ol>
+              <p><strong>장점</strong></p>
+              <ul>
+                <li>인터넷을 사용하여 빠르게 사용가능</li>
+                <li>파일만 교체하면 새 학기 데이터 반영 가능</li>
+                <li>학생별 이동반/탐구/교양 선택을 자동 매핑</li>
+                <li>로컬 DB 저장 방식이라 관리가 간단하고 안정적</li>
+              </ul>
+              <div class="gs-help-modal-foot">개발자: 은준욱 (2026.02.26), V1.0.0</div>
+            </div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _render_mobile_menu(conn) -> str:
     if "mobile_mode" not in st.session_state:
         st.session_state.mobile_mode = st.session_state.get("sidebar_mode", MODE_STUDENT)
@@ -641,8 +748,7 @@ def _render_mobile_menu(conn) -> str:
     )
 
     if help_open:
-        st.markdown('<div class="gs-subpanel">도움말</div>', unsafe_allow_html=True)
-        _render_help_content()
+        _render_mobile_help_modal(_mobile_menu_href(mode_query, "0"))
 
     st.session_state.mobile_mode = mode
     st.session_state.sidebar_mode = mode
