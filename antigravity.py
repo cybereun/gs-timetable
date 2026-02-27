@@ -781,7 +781,6 @@ def render_navigation(conn) -> str:
         index=0 if st.session_state.sidebar_mode == MODE_STUDENT else 1,
         key="sidebar_mode",
     )
-    st.session_state.sidebar_mode = mode
     _render_sidebar_help()
 
     stats = database.get_stats(conn)
