@@ -542,7 +542,7 @@ def _render_help_content() -> None:
         4. 요일을 선택하면 해당 요일의 이동 장소와 과목/교사를 바로 확인할 수 있습니다.
 
         **장점**
-        - 인터넷 없이도 교내망/로컬에서 빠르게 사용 가능
+        - 인터넷을 사용하여 빠르게 사용가능
         - 파일만 교체하면 새 학기 데이터 반영 가능
         - 학생별 이동반/탐구/교양 선택을 자동 매핑
         - 로컬 DB 저장 방식이라 관리가 간단하고 안정적
@@ -561,20 +561,22 @@ def _render_mobile_menu(conn) -> str:
     if "mobile_mode" not in st.session_state:
         st.session_state.mobile_mode = st.session_state.get("sidebar_mode", MODE_STUDENT)
 
-    mobile_desc_col, mobile_help_col = st.columns([9, 1])
-    with mobile_desc_col:
-        st.markdown('<div class="gs-section-sub">메뉴를 선택하면 화면이 즉시 전환됩니다.</div>', unsafe_allow_html=True)
-    with mobile_help_col:
+    st.markdown('<div class="gs-section-sub">메뉴를 선택하면 화면이 즉시 전환됩니다.</div>', unsafe_allow_html=True)
+
+    menu_col, help_col = st.columns([8, 1])
+    with menu_col:
+        mode = st.radio(
+            "화면 선택",
+            MODE_OPTIONS,
+            index=0 if st.session_state.mobile_mode == MODE_STUDENT else 1,
+            horizontal=True,
+            key="mobile_mode",
+            label_visibility="collapsed",
+        )
+    with help_col:
         with st.popover("⚙️"):
             _render_help_content()
 
-    mode = st.radio(
-        "화면 선택",
-        MODE_OPTIONS,
-        index=0 if st.session_state.mobile_mode == MODE_STUDENT else 1,
-        horizontal=True,
-        key="mobile_mode",
-    )
     st.session_state.sidebar_mode = mode
 
     stats = database.get_stats(conn)
