@@ -493,9 +493,9 @@ def render_header() -> None:
 def render_hero() -> None:
     st.markdown(
         """
-        <div class="gs-hero">
+        <div id="gs-hero-anchor" class="gs-hero">
           <div class="gs-hero-title">📚 GS-Timetable</div>
-          <div class="gs-hero-sub">학생 이동 시간표를 빠르게 찾는 귀엽고 선명한 교내 전용 스케줄 앱</div>
+          <div class="gs-hero-sub">학생 이동 시간표를 빠르게 찾는 교내 전용 스케줄 앱</div>
           <div class="gs-chip-row">
             <span class="gs-chip pink">2학년 전용</span>
             <span class="gs-chip mint">로컬 SQLite 저장</span>
@@ -504,6 +504,30 @@ def render_hero() -> None:
         </div>
         """,
         unsafe_allow_html=True,
+    )
+
+
+def focus_hero_on_mobile_first_load() -> None:
+    if not is_mobile_client():
+        return
+    if st.session_state.get("mobile_hero_focused_once", False):
+        return
+
+    st.session_state.mobile_hero_focused_once = True
+    components.html(
+        """
+        <script>
+        function scrollToHero() {
+          const hero = window.parent.document.getElementById("gs-hero-anchor");
+          if (hero) {
+            hero.scrollIntoView({ block: "start", behavior: "auto" });
+          }
+        }
+        scrollToHero();
+        setTimeout(scrollToHero, 120);
+        </script>
+        """,
+        height=0,
     )
 
 
@@ -1171,6 +1195,7 @@ def main() -> None:
     conn = get_db()
     mode = render_navigation(conn)
     render_hero()
+    focus_hero_on_mobile_first_load()
     if mode == MODE_ADMIN:
         render_admin(conn)
     else:
