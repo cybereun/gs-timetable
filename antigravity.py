@@ -10,6 +10,10 @@ from gs_timetable import database, etl, service
 from gs_timetable.constants import APP_TITLE, WEEKDAYS
 
 TARGET_GRADE = 2
+MODE_STUDENT = "학생 화면"
+MODE_ADMIN = "관리자"
+MODE_OPTIONS = [MODE_STUDENT, MODE_ADMIN]
+MOBILE_UA_KEYWORDS = ("android", "iphone", "ipad", "ipod", "mobile", "windows phone", "opera mini")
 
 
 st.set_page_config(page_title=APP_TITLE, page_icon="📚", layout="wide", initial_sidebar_state="expanded")
@@ -20,6 +24,20 @@ def get_db():
     conn = database.get_connection()
     database.initialize_database(conn)
     return conn
+
+
+def is_mobile_client() -> bool:
+    if str(st.query_params.get("is_mobile", "")).lower() == "true":
+        return True
+
+    user_agent = ""
+    context = getattr(st, "context", None)
+    if context is not None:
+        headers = getattr(context, "headers", None)
+        if headers:
+            user_agent = str(headers.get("user-agent", "")).lower()
+
+    return any(keyword in user_agent for keyword in MOBILE_UA_KEYWORDS)
 
 
 def render_header() -> None:
@@ -299,18 +317,30 @@ def render_header() -> None:
         }
         .stTextInput input,
         .stSelectbox div[data-baseweb="select"] > div {
-            background: rgba(255,255,255,0.9) !important;
+            background: #ffffff !important;
             border: 1px solid rgba(169, 186, 214, 0.45) !important;
+            color: #213047 !important;
+            -webkit-text-fill-color: #213047 !important;
+        }
+        .stTextInput label, .stSelectbox label {
+            color: #213047 !important;
+        }
+        .stTextInput input::placeholder {
+            color: #8c9ba5 !important;
+            -webkit-text-fill-color: #8c9ba5 !important;
         }
         .stButton > button {
             border-radius: 14px !important;
             border: 1px solid rgba(255,255,255,0.85) !important;
             font-weight: 800 !important;
             box-shadow: 0 8px 18px rgba(44,67,103,0.08);
+            color: #213047 !important;
+            -webkit-text-fill-color: #213047 !important;
         }
         .stButton > button[kind="primary"] {
             background: linear-gradient(135deg, #ff8dc3, #8bc4ff) !important;
-            color: white !important;
+            color: #1a2536 !important;
+            -webkit-text-fill-color: #1a2536 !important;
         }
         section[data-testid="stSidebar"] .stButton > button {
             background: linear-gradient(135deg, rgba(255,127,184,0.23), rgba(115,184,255,0.23)) !important;
@@ -414,6 +444,25 @@ def render_header() -> None:
         """,
         unsafe_allow_html=True,
     )
+    if is_mobile_client():
+        st.markdown(
+            """
+            <style>
+            section[data-testid="stSidebar"] {
+                min-width: 0 !important;
+                max-width: 0 !important;
+                width: 0 !important;
+                transform: translateX(-110%) !important;
+                margin-left: -18rem !important;
+            }
+            section[data-testid="stSidebar"] > div {
+                width: 0 !important;
+                min-width: 0 !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
     st.markdown(
         """
         <div class="gs-hero">
@@ -452,13 +501,48 @@ def _render_sidebar_help() -> None:
         st.caption("개발자: 은준욱 (2026.02.26), V1.0.0")
 
 
-def render_sidebar(conn) -> str:
+def _render_mobile_menu(conn) -> str:
+    if "mobile_mode" not in st.session_state:
+        st.session_state.mobile_mode = st.session_state.get("sidebar_mode", MODE_STUDENT)
+
+    st.markdown('<div class="gs-section-title">메뉴</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gs-section-sub">모바일에서는 상단 메뉴로 화면을 전환합니다.</div>', unsafe_allow_html=True)
+    mode = st.radio(
+        "화면 선택",
+        MODE_OPTIONS,
+        index=0 if st.session_state.mobile_mode == MODE_STUDENT else 1,
+        horizontal=True,
+        key="mobile_mode",
+    )
+    st.session_state.sidebar_mode = mode
+
+    stats = database.get_stats(conn)
+    with st.expander("DB 상태 / 사용 안내", expanded=False):
+        st.write(f"학생 수: {stats['student_count']}")
+        st.write(f"시간표 행 수: {stats['timetable_count']}")
+        st.caption(stats["last_updated_at"] or "최근 업데이트 없음")
+        st.markdown("---")
+        st.markdown("학생 화면: 학번 또는 반/번호로 시간표를 조회합니다.")
+        st.markdown("관리자: CSV/XLSX 업로드 후 DB 업데이트를 실행합니다.")
+
+    return mode
+
+
+def render_navigation(conn) -> str:
     if "sidebar_mode" not in st.session_state:
-        st.session_state.sidebar_mode = "학생 화면"
+        st.session_state.sidebar_mode = MODE_STUDENT
+
+    if is_mobile_client():
+        return _render_mobile_menu(conn)
 
     st.sidebar.markdown('<div class="gs-side-title">메뉴</div>', unsafe_allow_html=True)
     st.sidebar.markdown('<div class="gs-side-note">학생 조회 / 관리자 데이터 업데이트</div>', unsafe_allow_html=True)
-    mode = st.sidebar.radio("화면 선택", ["학생 화면", "관리자"], index=0 if st.session_state.sidebar_mode == "학생 화면" else 1)
+    mode = st.sidebar.radio(
+        "화면 선택",
+        MODE_OPTIONS,
+        index=0 if st.session_state.sidebar_mode == MODE_STUDENT else 1,
+        key="sidebar_mode",
+    )
     st.session_state.sidebar_mode = mode
     _render_sidebar_help()
 
@@ -777,6 +861,19 @@ def _render_weekly_print_preview(
 
 
 def render_admin(conn) -> None:
+    if is_mobile_client():
+        if not st.session_state.get("admin_authenticated", False):
+            st.markdown('<div class="gs-section-title">관리자 인증</div>', unsafe_allow_html=True)
+            st.markdown('<div class="gs-section-sub">이 기기(모바일)에서 접근하려면 4자리 비밀번호가 필요합니다.</div>', unsafe_allow_html=True)
+            pin = st.text_input("비밀번호 (예: 1234)", type="password")
+            if st.button("확인"):
+                if pin == "1234":
+                    st.session_state.admin_authenticated = True
+                    st.rerun()
+                elif pin != "":
+                    st.error("비밀번호가 일치하지 않습니다.")
+            return
+
     st.markdown('<div class="gs-section-title">관리자 데이터 업로드</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="gs-section-sub">업로드 시 기존 SQLite 데이터를 덮어씁니다. (2학년 전용)</div>',
@@ -1017,8 +1114,8 @@ def render_student(conn) -> None:
 def main() -> None:
     render_header()
     conn = get_db()
-    mode = render_sidebar(conn)
-    if mode == "관리자":
+    mode = render_navigation(conn)
+    if mode == MODE_ADMIN:
         render_admin(conn)
     else:
         render_student(conn)
