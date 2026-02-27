@@ -1102,9 +1102,26 @@ def render_admin(conn) -> None:
         st.markdown('<div class="gs-section-title">관리자 인증</div>', unsafe_allow_html=True)
         st.markdown('<div class="gs-section-sub">관리자 화면에 접근하려면 4자리 비밀번호가 필요합니다.</div>', unsafe_allow_html=True)
 
-        pin_col_ratio = [1.0, 8.0] if is_mobile_client() else [0.6, 9.4]
-        pin_col, _ = st.columns(pin_col_ratio)
-        with pin_col:
+        if is_mobile_client():
+            pin_col, _ = st.columns([1.0, 8.0])
+            with pin_col:
+                pin = st.text_input("비밀번호", type="password", max_chars=4, placeholder="0000")
+        else:
+            st.markdown(
+                """
+                <style>
+                div[data-testid="stTextInput"]:has(input[aria-label="비밀번호"]) {
+                    width: 3cm !important;
+                    max-width: 3cm !important;
+                }
+                div[data-testid="stTextInput"]:has(input[aria-label="비밀번호"]) > div {
+                    width: 3cm !important;
+                    max-width: 3cm !important;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
             pin = st.text_input("비밀번호", type="password", max_chars=4, placeholder="0000")
 
         if st.button("확인", use_container_width=False):
