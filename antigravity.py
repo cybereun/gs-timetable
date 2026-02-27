@@ -425,16 +425,41 @@ def render_header() -> None:
         }
         @media (max-width: 720px) {
             .gs-card {
-                grid-template-columns: 1fr;
-                gap: 8px;
-                align-items: start;
+                grid-template-columns: 62px minmax(0, 1fr) auto;
+                gap: 7px;
+                align-items: center;
+                padding: 9px 10px;
             }
             .gs-dest-pill {
-                width: fit-content;
+                max-width: 34vw;
+                width: auto;
+                padding: 7px 9px;
+                font-size: 0.8rem;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             .gs-period-pill {
-                width: fit-content;
-                padding: 8px 12px;
+                width: 100%;
+                padding: 7px 6px;
+                font-size: 0.82rem;
+            }
+            .gs-card-title {
+                font-size: 0.9rem;
+                margin-bottom: 2px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .gs-meta-row {
+                gap: 4px;
+            }
+            .gs-mini-chip {
+                padding: 2px 6px;
+                font-size: 0.68rem;
+            }
+            .gs-meta {
+                font-size: 0.74rem;
             }
             .gs-hero-title {
                 font-size: 1.38rem;
@@ -463,6 +488,9 @@ def render_header() -> None:
             """,
             unsafe_allow_html=True,
         )
+
+
+def render_hero() -> None:
     st.markdown(
         """
         <div class="gs-hero">
@@ -505,8 +533,8 @@ def _render_mobile_menu(conn) -> str:
     if "mobile_mode" not in st.session_state:
         st.session_state.mobile_mode = st.session_state.get("sidebar_mode", MODE_STUDENT)
 
-    st.markdown('<div class="gs-section-title">메뉴</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gs-section-sub">모바일에서는 상단 메뉴로 화면을 전환합니다.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gs-section-title">상단 네비게이션</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gs-section-sub">메뉴를 선택하면 화면이 즉시 전환됩니다.</div>', unsafe_allow_html=True)
     mode = st.radio(
         "화면 선택",
         MODE_OPTIONS,
@@ -865,7 +893,7 @@ def render_admin(conn) -> None:
         if not st.session_state.get("admin_authenticated", False):
             st.markdown('<div class="gs-section-title">관리자 인증</div>', unsafe_allow_html=True)
             st.markdown('<div class="gs-section-sub">이 기기(모바일)에서 접근하려면 4자리 비밀번호가 필요합니다.</div>', unsafe_allow_html=True)
-            pin = st.text_input("비밀번호 (예: 0114)", type="password")
+            pin = st.text_input("비밀번호", type="password")
             if st.button("확인"):
                 if pin == "0114":
                     st.session_state.admin_authenticated = True
@@ -959,35 +987,62 @@ def _student_picker(conn):
         st.session_state._search_by_id_enter = True
 
     class_options = service.list_classes(conn)
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
+    if is_mobile_client():
         student_id_input = st.text_input(
             "학번 입력",
             placeholder="예: 20115",
             key="student_id_search_input",
             on_change=_mark_search_by_id_enter,
         )
-    with col2:
-        class_no = st.selectbox(
-            "반",
-            options=class_options if class_options else [None],
-            format_func=lambda value: "-" if value is None else f"{value}반",
-            key="search_class_no",
-        )
-    with col3:
-        student_numbers = service.list_student_numbers(conn, class_no)
-        student_no = st.selectbox(
-            "번호",
-            options=student_numbers if student_numbers else [None],
-            format_func=lambda value: "-" if value is None else f"{value}번",
-            key="search_student_no",
-        )
-
-    search_col1, search_col2 = st.columns(2)
-    with search_col1:
         search_by_id_clicked = st.button("학번으로 조회", type="primary", use_container_width=True)
-    with search_col2:
+
+        class_col, no_col = st.columns(2)
+        with class_col:
+            class_no = st.selectbox(
+                "반",
+                options=class_options if class_options else [None],
+                format_func=lambda value: "-" if value is None else f"{value}반",
+                key="search_class_no",
+            )
+        with no_col:
+            student_numbers = service.list_student_numbers(conn, class_no)
+            student_no = st.selectbox(
+                "번호",
+                options=student_numbers if student_numbers else [None],
+                format_func=lambda value: "-" if value is None else f"{value}번",
+                key="search_student_no",
+            )
         search_by_class_clicked = st.button("반/번호로 조회", type="primary", use_container_width=True)
+    else:
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            student_id_input = st.text_input(
+                "학번 입력",
+                placeholder="예: 20115",
+                key="student_id_search_input",
+                on_change=_mark_search_by_id_enter,
+            )
+        with col2:
+            class_no = st.selectbox(
+                "반",
+                options=class_options if class_options else [None],
+                format_func=lambda value: "-" if value is None else f"{value}반",
+                key="search_class_no",
+            )
+        with col3:
+            student_numbers = service.list_student_numbers(conn, class_no)
+            student_no = st.selectbox(
+                "번호",
+                options=student_numbers if student_numbers else [None],
+                format_func=lambda value: "-" if value is None else f"{value}번",
+                key="search_student_no",
+            )
+
+        search_col1, search_col2 = st.columns(2)
+        with search_col1:
+            search_by_id_clicked = st.button("학번으로 조회", type="primary", use_container_width=True)
+        with search_col2:
+            search_by_class_clicked = st.button("반/번호로 조회", type="primary", use_container_width=True)
 
     if st.session_state._search_by_id_enter:
         search_by_id_clicked = True
@@ -1115,6 +1170,7 @@ def main() -> None:
     render_header()
     conn = get_db()
     mode = render_navigation(conn)
+    render_hero()
     if mode == MODE_ADMIN:
         render_admin(conn)
     else:
