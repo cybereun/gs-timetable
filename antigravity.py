@@ -499,7 +499,7 @@ def render_hero() -> None:
           <div class="gs-chip-row">
             <span class="gs-chip pink">2학년 전용</span>
             <span class="gs-chip mint">로컬 SQLite 저장</span>
-            <span class="gs-chip blue">CSV/XLSX 업로드형</span>
+            <span class="gs-chip blue">CSV/XLSX</span>
           </div>
         </div>
         """,
@@ -533,7 +533,6 @@ def _render_mobile_menu(conn) -> str:
     if "mobile_mode" not in st.session_state:
         st.session_state.mobile_mode = st.session_state.get("sidebar_mode", MODE_STUDENT)
 
-    st.markdown('<div class="gs-section-title">상단 네비게이션</div>', unsafe_allow_html=True)
     st.markdown('<div class="gs-section-sub">메뉴를 선택하면 화면이 즉시 전환됩니다.</div>', unsafe_allow_html=True)
     mode = st.radio(
         "화면 선택",
@@ -552,6 +551,7 @@ def _render_mobile_menu(conn) -> str:
         st.markdown("---")
         st.markdown("학생 화면: 학번 또는 반/번호로 시간표를 조회합니다.")
         st.markdown("관리자: CSV/XLSX 업로드 후 DB 업데이트를 실행합니다.")
+    st.markdown("---")
 
     return mode
 
