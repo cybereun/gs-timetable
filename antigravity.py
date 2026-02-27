@@ -564,12 +564,12 @@ def _render_mobile_menu(conn) -> str:
     st.markdown('<div class="gs-section-sub">메뉴를 선택하면 화면이 즉시 전환됩니다.</div>', unsafe_allow_html=True)
 
     mode = st.session_state.mobile_mode
-    student_col, admin_col, help_col = st.columns([1.35, 1.15, 0.35], gap="small")
+    student_col, admin_col, help_col, spacer_col = st.columns([2.4, 2.0, 0.9, 5.0], gap="small")
     with student_col:
         if st.button(
             "학생화면",
             key="mobile_mode_student_btn",
-            use_container_width=True,
+            use_container_width=False,
             type="primary" if mode == MODE_STUDENT else "secondary",
         ):
             mode = MODE_STUDENT
@@ -577,13 +577,15 @@ def _render_mobile_menu(conn) -> str:
         if st.button(
             MODE_ADMIN,
             key="mobile_mode_admin_btn",
-            use_container_width=True,
+            use_container_width=False,
             type="primary" if mode == MODE_ADMIN else "secondary",
         ):
             mode = MODE_ADMIN
     with help_col:
         with st.popover("⚙️"):
             _render_help_content()
+    with spacer_col:
+        st.empty()
 
     st.session_state.mobile_mode = mode
     st.session_state.sidebar_mode = mode
