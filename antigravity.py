@@ -865,9 +865,9 @@ def render_admin(conn) -> None:
         if not st.session_state.get("admin_authenticated", False):
             st.markdown('<div class="gs-section-title">관리자 인증</div>', unsafe_allow_html=True)
             st.markdown('<div class="gs-section-sub">이 기기(모바일)에서 접근하려면 4자리 비밀번호가 필요합니다.</div>', unsafe_allow_html=True)
-            pin = st.text_input("비밀번호 (예: 1234)", type="password")
+            pin = st.text_input("비밀번호 (예: 0114)", type="password")
             if st.button("확인"):
-                if pin == "1234":
+                if pin == "0114":
                     st.session_state.admin_authenticated = True
                     st.rerun()
                 elif pin != "":
