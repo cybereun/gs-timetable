@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from html import escape
+from urllib.parse import urlencode
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -423,23 +424,50 @@ def render_header() -> None:
         .stDataFrame, [data-testid="stExpander"] {
             border-radius: 16px;
         }
+        .gs-mobile-flex-menu {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 0.4rem;
+            margin: 0.2rem 0 0.35rem 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .gs-mobile-nav-btn,
+        .gs-mobile-nav-gear {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            text-decoration: none !important;
+            font-weight: 800;
+            border: 1px solid rgba(255,255,255,0.88);
+            box-shadow: 0 8px 18px rgba(44,67,103,0.08);
+            white-space: nowrap;
+            transition: all 0.16s ease;
+        }
+        .gs-mobile-nav-btn {
+            padding: 0.45rem 0.78rem;
+            color: #213047 !important;
+            background: rgba(255,255,255,0.92);
+            font-size: 0.86rem;
+        }
+        .gs-mobile-nav-btn.active {
+            background: linear-gradient(135deg, rgba(255,141,195,0.24), rgba(121,228,211,0.26));
+            border-color: rgba(117, 174, 255, 0.55);
+            color: #243b5c !important;
+        }
+        .gs-mobile-nav-gear {
+            width: 2.15rem;
+            height: 2.15rem;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #2d3e5b, #4f6282);
+            border-color: rgba(255,255,255,0.24);
+        }
+        .gs-mobile-nav-gear.active {
+            background: linear-gradient(135deg, #ff637f, #ff8f73);
+        }
         @media (max-width: 720px) {
-            div[data-testid="stVerticalBlock"]:has(.gs-mobile-menu-hook) > div[data-testid="stHorizontalBlock"] {
-                display: flex !important;
-                flex-wrap: nowrap !important;
-                align-items: center !important;
-                gap: 0.32rem !important;
-            }
-            div[data-testid="stVerticalBlock"]:has(.gs-mobile-menu-hook) > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-                width: auto !important;
-                flex: 0 0 auto !important;
-                min-width: 0 !important;
-            }
-            div[data-testid="stVerticalBlock"]:has(.gs-mobile-menu-hook) button {
-                white-space: nowrap !important;
-                padding-left: 0.55rem !important;
-                padding-right: 0.55rem !important;
-            }
             .gs-card {
                 grid-template-columns: 62px minmax(0, 1fr) auto;
                 gap: 7px;
@@ -579,29 +607,42 @@ def _render_mobile_menu(conn) -> str:
 
     st.markdown('<div class="gs-section-sub">메뉴를 선택하면 화면이 즉시 전환됩니다.</div>', unsafe_allow_html=True)
 
-    mode = st.session_state.mobile_mode
-    with st.container():
-        st.markdown('<div class="gs-mobile-menu-hook"></div>', unsafe_allow_html=True)
-        student_col, admin_col, help_col = st.columns([1.75, 1.4, 0.6], gap="small")
-        with student_col:
-            if st.button(
-                "학생화면",
-                key="mobile_mode_student_btn",
-                use_container_width=False,
-                type="primary" if mode == MODE_STUDENT else "secondary",
-            ):
-                mode = MODE_STUDENT
-        with admin_col:
-            if st.button(
-                MODE_ADMIN,
-                key="mobile_mode_admin_btn",
-                use_container_width=False,
-                type="primary" if mode == MODE_ADMIN else "secondary",
-            ):
-                mode = MODE_ADMIN
-        with help_col:
-            with st.popover("⚙️"):
-                _render_help_content()
+    menu_param = str(st.query_params.get("mobile_menu", "")).lower()
+    if menu_param == "student":
+        mode = MODE_STUDENT
+    elif menu_param == "admin":
+        mode = MODE_ADMIN
+    else:
+        mode = st.session_state.mobile_mode
+
+    help_open = str(st.query_params.get("mobile_help", "")).lower() in {"1", "true", "yes"}
+    mode_query = "student" if mode == MODE_STUDENT else "admin"
+    student_class = "active" if mode == MODE_STUDENT else ""
+    admin_class = "active" if mode == MODE_ADMIN else ""
+    gear_class = "active" if help_open else ""
+    help_toggle = "0" if help_open else "1"
+    force_mobile = str(st.query_params.get("is_mobile", "")).lower() == "true"
+
+    def _mobile_menu_href(target_mode: str, help_flag: str) -> str:
+        params = {"mobile_menu": target_mode, "mobile_help": help_flag}
+        if force_mobile:
+            params["is_mobile"] = "true"
+        return f"?{urlencode(params)}"
+
+    st.markdown(
+        f"""
+        <div class="gs-mobile-flex-menu">
+          <a class="gs-mobile-nav-btn {student_class}" href="{_mobile_menu_href('student', '0')}">학생화면</a>
+          <a class="gs-mobile-nav-btn {admin_class}" href="{_mobile_menu_href('admin', '0')}">관리자</a>
+          <a class="gs-mobile-nav-gear {gear_class}" href="{_mobile_menu_href(mode_query, help_toggle)}">⚙️</a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if help_open:
+        st.markdown('<div class="gs-subpanel">도움말</div>', unsafe_allow_html=True)
+        _render_help_content()
 
     st.session_state.mobile_mode = mode
     st.session_state.sidebar_mode = mode
