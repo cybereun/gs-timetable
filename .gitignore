@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.streamlit/
+antigravity.db
+build/
+dist/
+mobile/
+assets/
+build_exe.ps1
+GS-Timetable.spec
+*.log
