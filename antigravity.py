@@ -382,10 +382,27 @@ def render_header() -> None:
             margin: 0 !important;
             background: rgba(255,255,255,0.78);
             border-radius: 999px;
-            padding: 7px 12px;
+            width: 2.55rem;
+            min-width: 2.55rem;
+            height: 2.55rem;
+            min-height: 2.55rem;
+            padding: 0 !important;
             border: 1px solid rgba(255,255,255,0.9);
             box-shadow: 0 4px 14px rgba(44,67,103,0.05);
             transition: all 0.18s ease;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center;
+            line-height: 1;
+        }
+        div[data-testid="stRadio"] label[data-baseweb="radio"] > div:last-child {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100%;
+            height: 100%;
+            text-align: center;
         }
         div[data-testid="stRadio"] label[data-baseweb="radio"]:hover {
             transform: translateY(-1px);
@@ -408,6 +425,11 @@ def render_header() -> None:
             border: 1px solid rgba(255,255,255,0.12);
             color: rgba(246, 251, 255, 0.95);
             box-shadow: none;
+            width: auto;
+            min-width: 0;
+            height: auto;
+            min-height: 0;
+            padding: 7px 12px !important;
         }
         section[data-testid="stSidebar"] div[data-testid="stRadio"] label[data-baseweb="radio"]:hover {
             background: linear-gradient(135deg, rgba(255,141,195,0.18), rgba(115,184,255,0.20));
