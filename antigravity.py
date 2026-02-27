@@ -531,33 +531,43 @@ def focus_hero_on_mobile_first_load() -> None:
     )
 
 
+def _render_help_content() -> None:
+    st.markdown("### GS-Timetable 사용 안내")
+    st.markdown(
+        """
+        **사용방법**
+        1. `관리자` 화면에서 학급시간표 CSV와 학생정보 엑셀/CSV를 업로드합니다.
+        2. `DB 업데이트 실행`을 눌러 최신 학기 데이터로 교체합니다.
+        3. `학생 화면`에서 학번 또는 반/번호로 학생을 조회합니다.
+        4. 요일을 선택하면 해당 요일의 이동 장소와 과목/교사를 바로 확인할 수 있습니다.
+
+        **장점**
+        - 인터넷 없이도 교내망/로컬에서 빠르게 사용 가능
+        - 파일만 교체하면 새 학기 데이터 반영 가능
+        - 학생별 이동반/탐구/교양 선택을 자동 매핑
+        - 로컬 DB 저장 방식이라 관리가 간단하고 안정적
+        """
+    )
+    st.markdown("---")
+    st.caption("개발자: 은준욱 (2026.02.26), V1.0.0")
+
+
 def _render_sidebar_help() -> None:
     with st.sidebar.popover("⚙️", use_container_width=False):
-        st.markdown("### GS-Timetable 사용 안내")
-        st.markdown(
-            """
-            **사용방법**
-            1. `관리자` 화면에서 학급시간표 CSV와 학생정보 엑셀/CSV를 업로드합니다.
-            2. `DB 업데이트 실행`을 눌러 최신 학기 데이터로 교체합니다.
-            3. `학생 화면`에서 학번 또는 반/번호로 학생을 조회합니다.
-            4. 요일을 선택하면 해당 요일의 이동 장소와 과목/교사를 바로 확인할 수 있습니다.
-
-            **장점**
-            - 인터넷 없이도 교내망/로컬에서 빠르게 사용 가능
-            - 파일만 교체하면 새 학기 데이터 반영 가능
-            - 학생별 이동반/탐구/교양 선택을 자동 매핑
-            - 로컬 DB 저장 방식이라 관리가 간단하고 안정적
-            """
-        )
-        st.markdown("---")
-        st.caption("개발자: 은준욱 (2026.02.26), V1.0.0")
+        _render_help_content()
 
 
 def _render_mobile_menu(conn) -> str:
     if "mobile_mode" not in st.session_state:
         st.session_state.mobile_mode = st.session_state.get("sidebar_mode", MODE_STUDENT)
 
-    st.markdown('<div class="gs-section-sub">메뉴를 선택하면 화면이 즉시 전환됩니다.</div>', unsafe_allow_html=True)
+    mobile_desc_col, mobile_help_col = st.columns([9, 1])
+    with mobile_desc_col:
+        st.markdown('<div class="gs-section-sub">메뉴를 선택하면 화면이 즉시 전환됩니다.</div>', unsafe_allow_html=True)
+    with mobile_help_col:
+        with st.popover("⚙️"):
+            _render_help_content()
+
     mode = st.radio(
         "화면 선택",
         MODE_OPTIONS,
