@@ -1098,18 +1098,17 @@ def _render_weekly_print_preview(
 
 
 def render_admin(conn) -> None:
-    if is_mobile_client():
-        if not st.session_state.get("admin_authenticated", False):
-            st.markdown('<div class="gs-section-title">관리자 인증</div>', unsafe_allow_html=True)
-            st.markdown('<div class="gs-section-sub">이 기기(모바일)에서 접근하려면 4자리 비밀번호가 필요합니다.</div>', unsafe_allow_html=True)
-            pin = st.text_input("비밀번호", type="password")
-            if st.button("확인"):
-                if pin == "0114":
-                    st.session_state.admin_authenticated = True
-                    st.rerun()
-                elif pin != "":
-                    st.error("비밀번호가 일치하지 않습니다.")
-            return
+    if not st.session_state.get("admin_authenticated", False):
+        st.markdown('<div class="gs-section-title">관리자 인증</div>', unsafe_allow_html=True)
+        st.markdown('<div class="gs-section-sub">관리자 화면에 접근하려면 4자리 비밀번호가 필요합니다.</div>', unsafe_allow_html=True)
+        pin = st.text_input("비밀번호", type="password")
+        if st.button("확인"):
+            if pin == "0114":
+                st.session_state.admin_authenticated = True
+                st.rerun()
+            elif pin != "":
+                st.error("비밀번호가 일치하지 않습니다.")
+        return
 
     st.markdown('<div class="gs-section-title">관리자 데이터 업로드</div>', unsafe_allow_html=True)
     st.markdown(
