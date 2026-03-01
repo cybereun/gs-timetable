@@ -62,6 +62,21 @@ def _resolve_required_settings(secrets: Mapping[str, Any] | None = None) -> Supa
     return settings
 
 
+def get_configuration_error(secrets: Mapping[str, Any] | None = None) -> str | None:
+    try:
+        _resolve_settings(secrets=secrets)
+        return None
+    except Exception as exc:  # noqa: BLE001
+        return str(exc)
+
+
+def is_enabled(secrets: Mapping[str, Any] | None = None) -> bool:
+    try:
+        return _resolve_settings(secrets=secrets) is not None
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _headers(settings: SupabaseSettings, *, json_body: bool = False) -> dict[str, str]:
     headers = {
         "Authorization": f"Bearer {settings.api_key}",

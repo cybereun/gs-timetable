@@ -41,8 +41,14 @@ streamlit run antigravity.py
 
 ## Supabase DB (persistent data)
 
-This app now syncs parsed data to Supabase Database tables only.
-No original CSV/XLSX file is stored.
+This app supports two data modes:
+
+- Local mode (PC/offline): save only to local `antigravity.db`
+- Supabase mode (cloud/mobile): sync parsed data to Supabase DB tables
+
+No original CSV/XLSX file is stored in either mode.
+
+Supabase mode is enabled only when secrets/env are configured.
 
 Required secrets/env:
 

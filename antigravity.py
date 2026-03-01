@@ -24,11 +24,15 @@ st.set_page_config(page_title=APP_TITLE, page_icon="📚", layout="wide", initia
 def get_db():
     conn = database.get_connection()
     database.initialize_database(conn)
-    try:
-        supabase_db.sync_sqlite_from_supabase(conn, secrets=get_optional_secrets())
+    secrets = get_optional_secrets()
+    if supabase_db.is_enabled(secrets=secrets):
+        try:
+            supabase_db.sync_sqlite_from_supabase(conn, secrets=secrets)
+            st.session_state.pop("_supabase_sync_error", None)
+        except Exception as exc:  # noqa: BLE001
+            st.session_state["_supabase_sync_error"] = str(exc)
+    else:
         st.session_state.pop("_supabase_sync_error", None)
-    except Exception as exc:  # noqa: BLE001
-        st.session_state["_supabase_sync_error"] = str(exc)
     return conn
 
 
@@ -37,6 +41,10 @@ def get_optional_secrets() -> dict[str, str]:
         return {str(key): str(value) for key, value in dict(st.secrets).items()}
     except Exception:  # noqa: BLE001
         return {}
+
+
+def is_supabase_mode() -> bool:
+    return supabase_db.is_enabled(secrets=get_optional_secrets())
 
 
 def is_mobile_client() -> bool:
@@ -1193,10 +1201,18 @@ def render_admin(conn) -> None:
 
     st.info("현재 앱은 2학년 전용으로 설정되어 있습니다. 업로드 시 2학년 데이터만 반영됩니다.")
 
-    st.caption("Supabase DB sync requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.")
-    sync_error = st.session_state.pop("_supabase_sync_error", None)
-    if sync_error:
-        st.warning(f"Supabase sync warning: {sync_error}")
+    secrets = get_optional_secrets()
+    supabase_enabled = is_supabase_mode()
+    config_error = supabase_db.get_configuration_error(secrets=secrets)
+    if supabase_enabled:
+        st.caption("Supabase mode: cloud/mobile data is synced to Supabase.")
+        sync_error = st.session_state.pop("_supabase_sync_error", None)
+        if sync_error:
+            st.warning(f"Supabase sync warning: {sync_error}")
+    else:
+        st.caption("Local mode: data is saved only to local SQLite for PC/offline use.")
+        if config_error:
+            st.warning(f"Supabase configuration warning: {config_error}")
 
     action_left, action_right = st.columns([2, 1])
     update_clicked = action_left.button("DB 업데이트 실행", type="primary", use_container_width=True)
@@ -1204,7 +1220,8 @@ def render_admin(conn) -> None:
 
     if clear_clicked:
         try:
-            supabase_db.clear_all_data(secrets=get_optional_secrets())
+            if supabase_enabled:
+                supabase_db.clear_all_data(secrets=secrets)
             database.clear_all_data(conn)
             st.success("데이터베이스를 초기화했습니다.")
             st.rerun()
@@ -1227,12 +1244,13 @@ def render_admin(conn) -> None:
 
         now_text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        supabase_db.replace_all_data(
-            student_rows=student_result.rows,
-            timetable_rows=timetable_result.rows,
-            last_updated_at=now_text,
-            secrets=get_optional_secrets(),
-        )
+        if supabase_enabled:
+            supabase_db.replace_all_data(
+                student_rows=student_result.rows,
+                timetable_rows=timetable_result.rows,
+                last_updated_at=now_text,
+                secrets=secrets,
+            )
 
         database.replace_student_master(conn, student_result.rows)
         database.replace_timetable_patterns(conn, timetable_result.rows)
