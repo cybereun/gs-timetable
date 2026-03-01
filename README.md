@@ -39,3 +39,57 @@ streamlit run antigravity.py
 - `스포츠` -> `체육관`
 - `공강` -> `본반`
 
+## Supabase DB (persistent data)
+
+This app now syncs parsed data to Supabase Database tables only.
+No original CSV/XLSX file is stored.
+
+Required secrets/env:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_KEY`)
+- Optional: `SUPABASE_DB_SCHEMA` (default: `public`)
+
+Create tables in Supabase SQL Editor:
+
+```sql
+create table if not exists public.student_master (
+  student_id text primary key,
+  student_name text not null,
+  class_no integer,
+  student_no integer,
+  homeroom_location text,
+  move_classroom text,
+  basic1_classroom text,
+  basic2_classroom text,
+  inquiry1_classroom text,
+  inquiry2_classroom text,
+  inquiry3_classroom text,
+  liberal_classroom text,
+  updated_at timestamptz default now()
+);
+
+create index if not exists idx_student_master_class_no_student_no
+  on public.student_master(class_no, student_no);
+
+create table if not exists public.timetable_pattern (
+  class_no integer not null,
+  weekday text not null,
+  period integer not null,
+  block_code text not null,
+  subject_name text,
+  teacher_name text,
+  subject_teacher text not null,
+  exception_location text,
+  updated_at timestamptz default now(),
+  primary key (class_no, weekday, period)
+);
+
+create index if not exists idx_timetable_pattern_lookup
+  on public.timetable_pattern(class_no, weekday, period);
+
+create table if not exists public.app_meta (
+  meta_key text primary key,
+  meta_value text not null
+);
+```

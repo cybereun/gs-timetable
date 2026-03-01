@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 import streamlit as st
 import streamlit.components.v1 as components
 
-from gs_timetable import database, etl, service
+from gs_timetable import database, etl, service, supabase_db
 from gs_timetable.constants import APP_TITLE, WEEKDAYS
 
 TARGET_GRADE = 2
@@ -24,7 +24,19 @@ st.set_page_config(page_title=APP_TITLE, page_icon="📚", layout="wide", initia
 def get_db():
     conn = database.get_connection()
     database.initialize_database(conn)
+    try:
+        supabase_db.sync_sqlite_from_supabase(conn, secrets=get_optional_secrets())
+        st.session_state.pop("_supabase_sync_error", None)
+    except Exception as exc:  # noqa: BLE001
+        st.session_state["_supabase_sync_error"] = str(exc)
     return conn
+
+
+def get_optional_secrets() -> dict[str, str]:
+    try:
+        return {str(key): str(value) for key, value in dict(st.secrets).items()}
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def is_mobile_client() -> bool:
@@ -1181,15 +1193,25 @@ def render_admin(conn) -> None:
 
     st.info("현재 앱은 2학년 전용으로 설정되어 있습니다. 업로드 시 2학년 데이터만 반영됩니다.")
 
+    st.caption("Supabase DB sync requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.")
+    sync_error = st.session_state.pop("_supabase_sync_error", None)
+    if sync_error:
+        st.warning(f"Supabase sync warning: {sync_error}")
+
     action_left, action_right = st.columns([2, 1])
     update_clicked = action_left.button("DB 업데이트 실행", type="primary", use_container_width=True)
     clear_clicked = action_right.button("DB 초기화", use_container_width=True)
 
     if clear_clicked:
-        database.clear_all_data(conn)
-        st.success("데이터베이스를 초기화했습니다.")
-        st.rerun()
-
+        try:
+            supabase_db.clear_all_data(secrets=get_optional_secrets())
+            database.clear_all_data(conn)
+            st.success("데이터베이스를 초기화했습니다.")
+            st.rerun()
+        except Exception as exc:  # noqa: BLE001
+            st.error(f"DB 초기화 실패: {exc}")
+            st.exception(exc)
+        return
     if not update_clicked:
         return
 
@@ -1203,9 +1225,18 @@ def render_admin(conn) -> None:
             timetable_file, target_grade=TARGET_GRADE
         )
 
+        now_text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        supabase_db.replace_all_data(
+            student_rows=student_result.rows,
+            timetable_rows=timetable_result.rows,
+            last_updated_at=now_text,
+            secrets=get_optional_secrets(),
+        )
+
         database.replace_student_master(conn, student_result.rows)
         database.replace_timetable_patterns(conn, timetable_result.rows)
-        database.set_meta(conn, "last_updated_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        database.set_meta(conn, "last_updated_at", now_text)
 
         stats = database.get_stats(conn)
         st.success("데이터베이스가 성공적으로 업데이트되었습니다.")
